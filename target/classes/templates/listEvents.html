@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Event Booking page - Welcome and choose an Event</title>
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+  <style>
+    body {
+      background-color: #f8f9fa;
+      color: #343a40;
+    }
+
+    .container {
+      max-width: 960px; margin-top: 30px;
+    }
+
+    h1, h2 {
+      color: #333;
+    }
+
+    .event-list-item {
+      background-color: #fff; border: 1px solid #ddd; border-radius: 5px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .event-list-item:hover {
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    .btn-add-location, .btn-edit, .btn-details {
+      margin-top: 10px;
+    }
+
+    .btn-add-location {
+      background-color: #007bff; color: white; font-weight: bold;
+    }
+
+    .btn-add-location:hover {
+      background-color: #0056b3;
+    }
+
+    .btn-details {
+      background-color: #17a2b8; color: white;
+    }
+
+    .btn-details:hover {
+      background-color: #138496;
+    }
+
+    .btn-edit {
+      background-color: #28a745; color: white;
+    }
+
+    .btn-edit:hover {
+      background-color: #218838;
+    }
+
+    .radio-label {
+      font-weight: bold;
+    }
+
+    .add-product-btn {
+      background-color: #28a745; color: white; padding: 10px 15px; border-radius: 5px; text-decoration: none;
+    }
+
+    .add-product-btn:hover {
+      background-color: #218838;
+    }
+
+    .ticket-selector {
+      width: 80px; display: inline-block; margin-right: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header class="text-center mb-4">
+    <h1>Welcome to our Event Booking App</h1>
+  </header>
+
+  <main>
+    <!-- Event Search Form -->
+    <h2>Search for an Event</h2>
+    <form th:method="GET" th:action="@{/events/events-list}" class="mb-4">
+      <div class="form-row">
+        <div class="form-group col-md-6">
+          <label for="search">By Event Name:</label>
+          <input type="text" name="searchName" id="search" class="form-control" placeholder="Search an event">
+        </div>
+        <div class="form-group col-md-6">
+          <label for="minRating">By Minimum Event Rating (0.00 - 10.00):</label>
+          <input type="number" name="minRating" id="minRating" class="form-control" min="0" max="10" placeholder="Min Rating">
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary w-100">Search</button>
+    </form>
+
+    <!-- Filter by Location -->
+    <h2>Filter by Location</h2>
+    <form th:method="GET" th:action="@{/events/events-list/by-location}" class="mb-4">
+      <div class="form-group">
+        <label for="locationId">Location:</label>
+        <select name="locationId" id="locationId" class="form-control">
+          <option th:each="location : ${locations}" th:value="${location.id}" th:text="${location.name}"></option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-info w-100">Filter</button>
+    </form>
+
+    <!-- Admin Only Add Location Button -->
+    <th:block sec:authorize="hasRole('ADMIN')">
+      <a href="/locations/add-form" class="btn btn-outline-primary btn-add-location w-100">Add New Location</a>
+    </th:block>
+
+    <!-- Event List for Booking -->
+    <form id="mainForm" th:method="POST" th:action="@{/events/events-list/save-booking}">
+      <h2>Choose an Event:</h2>
+      <div class="list-group">
+        <ul>
+          <li class="list-group-item event-list-item" th:each="event : ${events}">
+            <div>
+              <input type="radio" th:id="${event.getId()}" name="eventId" th:value="${event.getId()}" />
+              <label class="radio-label" th:for="${event.getId()}">
+                <strong>Name: </strong><span th:text="${event.getName()}"></span><br>
+                <strong>Description: </strong><span th:text="${event.getDescription()}"></span><br>
+                <strong>Rating: </strong><span th:text="${event.getPopularityScore()}"></span><br>
+                <strong>Location: </strong><span th:text="${event.location != null ? event.location.name : 'N/A'}"></span>
+              </label>
+              <div class="mt-2">
+                <th:block sec:authorize="hasRole('ADMIN')">
+                  <a th:href="@{'/events/events-list/edit-form/{id}' (id=${event.getId()})}" class="btn btn-edit">Edit</a>
+                </th:block>
+                <a th:href="@{'/events/events-list/event-details/{id}' (id=${event.getId()})}" class="btn btn-details">Details</a>
+              </div>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <div th:if="${events == null}">
+        <p>No events available.</p>
+      </div>
+
+      <th:block sec:authorize="hasRole('ADMIN')">
+        <a href="/events/events-list/add-form" class="add-product-btn">Add New Event</a>
+      </th:block>
+
+      <!-- Ticket Selector -->
+      <h2>Choose Number of Tickets:</h2>
+      <input type="number" name="numTickets" min="1" max="10" class="ticket-selector form-control-inline">
+      <button type="submit" class="btn btn-success w-100 mt-3">Submit</button>
+    </form>
+  </main>
+</div>
+
+<!-- Bootstrap JS and dependencies -->
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/x+965DzO0rT7pD2f7de8xThz2bm97WnC7weGJ0zG9dU8jlqU8fqqt3JlZhU8l" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-vFJXuSJpQRh/Mz9I4M9F9qF9hT2tC28k6Fv5lG8t4VZyBfGp0nZPb6cVxeSAnMFi" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-chp7GRD0vns2l04nbUS3pfJzkSCUL1jjD9CrD0vVOnSwz38gHcFvmejwFv6t4pcP" crossorigin="anonymous"></script>
+</body>
+</html>

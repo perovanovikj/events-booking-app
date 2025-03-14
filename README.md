@@ -1,0 +1,1 @@
+Java Spring Boot application for managing event bookings.
